@@ -32,6 +32,8 @@ def configure_app(app):
     @app.before_request
     def validate_csrf():
         if request.method in {"POST", "PUT", "PATCH", "DELETE"}:
+            if request.path.startswith("/donations/callback"):
+                return
             submitted = request.form.get("csrf_token", "")
             expected = request.cookies.get("csrf_token", "")
             if not submitted or not expected or not hmac.compare_digest(
