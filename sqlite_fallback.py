@@ -151,7 +151,26 @@ class SQLiteConnectionWrapper:
         return self._raw_conn.close()
 
 
+def _sqlite_date_format(val, fmt):
+    if not val:
+        return ""
+    s = str(val).strip()
+    if fmt == "%Y-%m-%d":
+        return s[:10]
+    if fmt in ("%Y-%m-%d %H:%i", "%Y-%m-%d %H:%M"):
+        return s[:16]
+    try:
+        from datetime import datetime
+        dt = datetime.fromisoformat(s)
+        py_fmt = str(fmt).replace("%i", "%M")
+        return dt.strftime(py_fmt)
+    except Exception:
+        return s[:16]
+
+
 def get_sqlite_connection(db_path=None):
+    from datetime import datetime
+
     target_path = db_path or os.getenv("SQLITE_DB_PATH", DEFAULT_SQLITE_PATH)
     conn = sqlite3.connect(
         target_path,
@@ -159,4 +178,8 @@ def get_sqlite_connection(db_path=None):
         detect_types=sqlite3.PARSE_DECLTYPES | sqlite3.PARSE_COLNAMES,
     )
     conn.execute("PRAGMA foreign_keys = ON")
+    conn.create_function("DATE_FORMAT", 2, _sqlite_date_format)
+    conn.create_function("DATABASE", 0, lambda: "cyberbullying_detection")
+    conn.create_function("NOW", 0, lambda: datetime.now().strftime("%Y-%m-%d %H:%M:%S"))
+    conn.create_function("CURDATE", 0, lambda: datetime.now().strftime("%Y-%m-%d"))
     return SQLiteConnectionWrapper(conn)
