@@ -44,13 +44,9 @@ class TestDonationsBlueprint(unittest.TestCase):
         mock_cursor = MagicMock()
         mock_db.return_value.__enter__.return_value = (None, mock_cursor)
 
-        # Get CSRF cookie first
-        get_res = self.client.get("/donate")
-        csrf_token = None
-        for cookie in self.client.cookie_jar:
-            if cookie.name == "csrf_token":
-                csrf_token = cookie.value
-                break
+        csrf_val = "test-csrf-token-12345"
+        self.client.set_cookie("csrf_token", csrf_val)
+        csrf_token = csrf_val
 
         response = self.client.post(
             "/donate/initiate",
